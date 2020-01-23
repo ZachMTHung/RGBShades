@@ -62,8 +62,10 @@
 
 
 // list of functions that will be displayed
-functionList effectList[] = {threeSine,
-                             threeDee,
+functionList effectList[] = {
+                             showTextZero,
+                             threeSine,
+                             //threeDee,
                              scrollTextZero,
                              plasma,
                              confetti,
@@ -139,7 +141,6 @@ void loop()
   FastLED.show(); // send the contents of the led memory to the LEDs
 
 }
-
 
 
 

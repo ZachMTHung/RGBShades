@@ -28,14 +28,14 @@ void hueCycle(byte incr) {
 
 // Set every LED in the array to a specified color
 void fillAll(CRGB fillColor) {
-  for (byte i = 0; i < NUM_LEDS; i++) {
+  for (uint16_t i = 0; i < NUM_LEDS; i++) {
     leds[i] = fillColor;
   }
 }
 
 // Fade every LED in the array by a specified amount
 void fadeAll(byte fadeIncr) {
-  for (byte i = 0; i < NUM_LEDS; i++) {
+  for (uint16_t i = 0; i < NUM_LEDS; i++) {
     leds[i] = leds[i].fadeToBlackBy(fadeIncr);
   }
 }
@@ -137,7 +137,9 @@ void loadCharBuffer(byte character) {
   }
   
   for (byte i = 0; i < 5; i++) {
-    charBuffer[i] = pgm_read_byte(Font[mappedCharacter]+i);
+    if( kMatrixHeight > 5) charBuffer[i] = pgm_read_byte(Font8[mappedCharacter]+i);
+    else charBuffer[i] = pgm_read_byte(Font5[mappedCharacter]+i);
+
   }
   
 }
@@ -145,6 +147,7 @@ void loadCharBuffer(byte character) {
 // Fetch a character value from a text string in flash
 char loadStringChar(byte string, byte character) {
   return (char) pgm_read_byte(currentStringAddress + character);
+//	return pgm_read_byte(&stringArray[string][character]);
 }
 
 // write EEPROM value if it's different from stored value

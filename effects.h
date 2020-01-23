@@ -252,6 +252,7 @@ void slantBars() {
 
 #define NORMAL 0
 #define RAINBOW 1
+#define ANTIRAINBOW 2
 #define charSpacing 2
 // Scroll a text string
 void scrollText(byte message, byte style, CRGB fgColor, CRGB bgColor) {
@@ -259,22 +260,22 @@ void scrollText(byte message, byte style, CRGB fgColor, CRGB bgColor) {
   static byte currentCharColumn = 0;
   static byte paletteCycle = 0;
   static CRGB currentColor;
-  static byte bitBuffer[16] = {0};
+  static byte bitBuffer[kMatrixWidth] = {0};
   static byte bitBufferPointer = 0;
-
   // startup tasks
   if (effectInit == false) {
     effectInit = true;
-    effectDelay = 35;
+    effectDelay = 50;
     currentMessageChar = 0;
     currentCharColumn = 0;
+
     selectFlashString(message);
     loadCharBuffer(loadStringChar(message, currentMessageChar));
     currentPalette = RainbowColors_p;
     for (byte i = 0; i < kMatrixWidth; i++) bitBuffer[i] = 0;
   }
 
-  paletteCycle += 15;
+  paletteCycle += kMatrixWidth-1;
 
   if (currentCharColumn < 5) { // characters are 5 pixels wide
     bitBuffer[(bitBufferPointer + kMatrixWidth - 1) % kMatrixWidth] = charBuffer[currentCharColumn]; // character
@@ -284,15 +285,20 @@ void scrollText(byte message, byte style, CRGB fgColor, CRGB bgColor) {
 
   CRGB pixelColor;
   for (byte x = 0; x < kMatrixWidth; x++) {
-    for (byte y = 0; y < 5; y++) { // characters are 5 pixels tall
+    for (byte y = 0; y < kMatrixHeight; y++) { // characters are 5 pixels tall
       if (bitRead(bitBuffer[(bitBufferPointer + x) % kMatrixWidth], y) == 1) {
         if (style == RAINBOW) {
-          pixelColor = ColorFromPalette(currentPalette, paletteCycle+y*16, 255);
+          pixelColor = ColorFromPalette(currentPalette, paletteCycle+y*kMatrixWidth, 255);
         } else {
           pixelColor = fgColor;
         }
       } else {
-        pixelColor = bgColor;
+        if (style == ANTIRAINBOW) {
+            //pixelColor = ColorFromPalette(currentPalette, paletteCycle+y*kMatrixHeight*2, 255);
+            pixelColor = ColorFromPalette(currentPalette, paletteCycle+y*x, 255);
+        } else {
+            pixelColor = bgColor;
+        }
       }
       leds[XY(x, y)] = pixelColor;
     }
@@ -311,13 +317,14 @@ void scrollText(byte message, byte style, CRGB fgColor, CRGB bgColor) {
   }
 
   bitBufferPointer++;
-  if (bitBufferPointer > 15) bitBufferPointer = 0;
+  if (bitBufferPointer > kMatrixWidth-1) bitBufferPointer = 0;
 
 }
 
 
 void scrollTextZero() {
-  scrollText(0, NORMAL, CRGB::Red, CRGB::Black);
+//scrollText(0, NORMAL, CRGB::Red, CRGB::Black);
+scrollText(0, NORMAL, CRGB::White, CRGB::Black);
 }
 
 void scrollTextOne() {
@@ -325,6 +332,79 @@ void scrollTextOne() {
 }
 
 void scrollTextTwo() {
-  scrollText(2, NORMAL, CRGB::Green, CRGB(0,0,8));
+//  scrollText(2, NORMAL, CRGB::Green, CRGB(0,0,8));
+  scrollText(2, ANTIRAINBOW, CRGB::White, 0);
 }
 
+void showText(byte message, byte style, CRGB fgColor, CRGB bgColor) {
+  static byte currentMessageChar = 0;
+  static byte currentCharColumn = 0;
+  static byte paletteCycle = 0;
+  static CRGB currentColor;
+  static byte bitBuffer[kMatrixWidth] = {0};
+  static byte bitBufferPointer = kMatrixWidth -1;
+  static uint8_t strLength;
+  static uint8_t margin;
+  // startup tasks
+  if (effectInit == false) {
+    effectInit = true;
+    effectDelay = 50;
+    currentMessageChar = 0;
+    currentCharColumn = 0;
+
+    strLength = strlen(stringArray[message]);
+    margin = (kMatrixWidth - (7 * strLength - 2))/2;
+
+    selectFlashString(message);
+    loadCharBuffer(loadStringChar(message, currentMessageChar));
+    currentPalette = RainbowColors_p;
+    for (byte i = 0; i < kMatrixWidth; i++) bitBuffer[i] = 0;
+  }
+
+for (bitBufferPointer = margin; bitBufferPointer < kMatrixWidth - margin ; bitBufferPointer++) {
+  paletteCycle += kMatrixWidth - 1;
+
+  if (currentCharColumn < 5) { // characters are 5 pixels wide
+    bitBuffer[bitBufferPointer] = charBuffer[currentCharColumn]; // character
+  } else {
+    bitBuffer[bitBufferPointer] = 0; // space
+  }
+
+  currentCharColumn++;
+  if (currentCharColumn > (4 + charSpacing) || (currentCharColumn > (4 + charSpacing - margin) && bitBufferPointer > kMatrixWidth - 2 - margin )) {
+    currentCharColumn = 0;
+    currentMessageChar++;
+    char nextChar = loadStringChar(message, currentMessageChar);
+    if (nextChar == 0) { // null character at end of strong
+      currentMessageChar = 0;
+      nextChar = loadStringChar(message, currentMessageChar);
+    }
+    loadCharBuffer(nextChar);
+  }
+
+}
+  CRGB pixelColor;
+  for (byte x = 0; x < kMatrixWidth; x++) {
+    for (byte y = 0; y < kMatrixHeight; y++) { // characters are 5 pixels tall
+      if (bitRead(bitBuffer[x], y) == 1) {
+        if (style == RAINBOW) {
+          pixelColor = ColorFromPalette(currentPalette, paletteCycle+y*kMatrixWidth, 255);
+        } else {
+          pixelColor = fgColor;
+        }
+      } else {
+        if (style == ANTIRAINBOW) {
+            pixelColor = ColorFromPalette(currentPalette, paletteCycle+y*kMatrixHeight*2, 255);
+        } else {
+            pixelColor = bgColor;
+        }
+      }
+      leds[XY(x, y)] = pixelColor;
+    }
+  }
+}
+
+void showTextZero() {
+//scrollText(0, NORMAL, CRGB::Red, CRGB::Black);
+showText(3, RAINBOW, CRGB::Black, CRGB::Black);
+}
